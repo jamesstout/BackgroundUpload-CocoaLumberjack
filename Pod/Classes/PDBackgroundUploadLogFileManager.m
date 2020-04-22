@@ -100,13 +100,14 @@
 {
     void (^block)() = ^{
         NSURLSessionConfiguration *backgroundConfiguration;
-        if ([NSURLSessionConfiguration respondsToSelector:@selector(backgroundSessionConfigurationWithIdentifier:)]) {
-            backgroundConfiguration = [NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:[self sessionIdentifier]];
-        } else {
-            backgroundConfiguration = [NSURLSessionConfiguration backgroundSessionConfiguration:[self sessionIdentifier]];
-        }
+        // no need for guard as targeting iOS 8 now.
+        backgroundConfiguration = [NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:[self sessionIdentifier]];
         backgroundConfiguration.discretionary = self.discretionary;
+        // add timeouts otherwise it never seems to fail
+        backgroundConfiguration.timeoutIntervalForRequest = 10.0;
+        backgroundConfiguration.timeoutIntervalForResource = 20.0;
         self.session = [NSURLSession sessionWithConfiguration:backgroundConfiguration delegate:self delegateQueue:nil];
+        
     };
     
     // on nsurlsessiond crashes, sessionWithConfiguration can block for a long time,
@@ -121,6 +122,8 @@
 // retries any files that may have errored
 - (void)uploadArchivedFiles
 {
+    PDLog(@"BackgroundUploadLogFileManager uploadArchivedFiles");
+
     dispatch_async([DDLog loggingQueue], ^{
         [self.session getTasksWithCompletionHandler:^(NSArray *dataTasks, NSArray *uploadTasks, NSArray *downloadTasks) {
             dispatch_async([DDLog loggingQueue], ^{ @autoreleasepool {
@@ -152,7 +155,9 @@
 {
     NSMutableURLRequest *request = [self.uploadRequest mutableCopy];
     [request setValue:[logFilePath stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLHostAllowedCharacterSet]] forHTTPHeaderField:@"X-BackgroundUpload-File"];
-
+    // added extra header to identify upload
+    [request setValue:[UIDevice.currentDevice.identifierForVendor.UUIDString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLHostAllowedCharacterSet]] forHTTPHeaderField:@"X-BackgroundUpload-File-UUID"];
+    
     NSURLSessionTask *task = [self.session uploadTaskWithRequest:request fromFile:[NSURL fileURLWithPath:logFilePath]];
     PDLog(@"BackgroundUploadLogFileManager: started uploading: %@", [self filePathForTask:task]); // test decoding header
     task.taskDescription = logFilePath;
@@ -186,6 +191,8 @@
 
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
 {
+    PDLog(@"BackgroundUploadLogFileManager: didCompleteWithError");
+
     [self uploadFilePath:[self filePathForTask:task] didCompleteWithError:error];
 }
 
