@@ -7,12 +7,9 @@
 //
 
 #import "PDAppDelegate.h"
-
-#define DD_LEGACY_MACROS 0
-#import <CocoaLumberjack/CocoaLumberjack.h>
 #import "PDBackgroundUploadLogFileManager.h"
 
-const int ddLogLevel = LOG_LEVEL_VERBOSE;
+const DDLogLevel ddLogLevel = DDLogLevelVerbose;
 
 @interface PDAppDelegate()
 
@@ -34,8 +31,7 @@ const int ddLogLevel = LOG_LEVEL_VERBOSE;
     
     return YES;
 }
-							
-- (void)application:(UIApplication *)application handleEventsForBackgroundURLSession:(NSString *)identifier completionHandler:(void (^)())completionHandler
+- (void)application:(UIApplication *)application handleEventsForBackgroundURLSession:(NSString *)identifier completionHandler:(void (^)(void))completionHandler
 {
     if ([[self.fileManager sessionIdentifier] isEqualToString:identifier]) {
         [self.fileManager handleEventsForBackgroundURLSession:completionHandler];
