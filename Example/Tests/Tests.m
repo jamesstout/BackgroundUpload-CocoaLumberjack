@@ -10,7 +10,8 @@
 #define DD_LEGACY_MACROS 0
 #import "DDLog.h"
 #import "PDBackgroundUploadLogFileManager.h"
-#import "PDAppDelegate.h"
+#import "../BackgroundUpload-CocoaLumberjack/PDAppDelegate.h"
+
 
 @interface PDBackgroundUploadLogFileManager (Tests)
 
